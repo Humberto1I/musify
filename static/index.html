@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1db954">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<title>Musify</title>
+<style>
+:root{--bg:#f4f4f6;--pn:#fff;--tx:#14141a;--mu:#6b6b78;--ac:#1db954;--hv:#ececf0}
+@media (prefers-color-scheme:dark){:root{--bg:#0b0b0e;--pn:#16161b;--tx:#f2f2f5;--mu:#9a9aa8;--hv:#22222a}}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--tx);font:15px system-ui,sans-serif}
+.app{height:100%;display:grid;grid-template-columns:190px 1fr;grid-template-rows:1fr auto;gap:8px;padding:8px;box-sizing:border-box}
+.side,.main,.bar{background:var(--pn);border-radius:12px}
+.side{padding:16px}.side h1{font-size:20px;margin:0 0 16px;color:var(--ac)}
+.nav{display:block;width:100%;text-align:left;background:none;border:0;color:var(--mu);padding:10px;border-radius:8px;font:inherit;cursor:pointer}
+.nav.on,.nav:hover{background:var(--hv);color:var(--tx)}
+.main{padding:16px;overflow:auto;min-height:0}.main h2{margin:0 0 10px}
+input[type=text],input[type=password]{width:100%;box-sizing:border-box;padding:10px 14px;border-radius:20px;border:1px solid var(--hv);background:var(--bg);color:var(--tx);font:inherit;margin-bottom:10px}
+#ytw{display:none;aspect-ratio:16/9;max-height:300px;width:100%;margin-bottom:12px;border-radius:10px;overflow:hidden;background:#000}
+#msg{color:var(--mu);font-size:13px;margin:0 0 10px}
+.row{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;padding:8px;border-radius:8px;cursor:pointer}
+.row:hover{background:var(--hv)}.row.on .t{color:var(--ac)}
+.cv{width:44px;height:44px;border-radius:6px;display:grid;place-items:center;color:#fff;font-weight:700;object-fit:cover;background:#555}
+.a{color:var(--mu);font-size:13px}.t,.a{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb{background:none;border:0;font-size:20px;cursor:pointer;color:var(--mu)}.hb.on{color:#e0245e}
+.bar{grid-column:1/-1;padding:10px 16px;display:grid;grid-template-columns:1fr 2fr 1fr;gap:12px;align-items:center}
+.now{display:flex;gap:10px;align-items:center;min-width:0}.now>div:last-child{min-width:0}
+.ctl{display:flex;flex-direction:column;align-items:center;gap:6px}
+.btns{display:flex;gap:14px;align-items:center}
+.btns button{background:none;border:0;color:var(--tx);font-size:18px;cursor:pointer}
+.btns .pp{background:var(--tx);color:var(--bg);width:38px;height:38px;border-radius:50%;font-size:16px}
+.pr{display:flex;gap:8px;align-items:center;width:100%;font-size:12px;color:var(--mu)}
+input[type=range]{flex:1;accent-color:var(--ac)}
+.vol{display:flex;justify-content:flex-end;gap:6px;align-items:center}.vol input{max-width:110px}
+.bx{display:flex;gap:2px}dialog{background:var(--pn);color:var(--tx);border:0;border-radius:12px;padding:16px;min-width:260px}dialog::backdrop{background:#0008}
+@media(max-width:700px){.app{grid-template-columns:1fr;grid-template-rows:auto 1fr auto}
+.side{display:flex;gap:8px;align-items:center;padding:8px 12px;overflow-x:auto}.side h1{margin:0 8px 0 0;font-size:17px}.nav{width:auto;white-space:nowrap}
+.bar{grid-template-columns:1fr;gap:8px}.vol{display:none}}
+</style></head><body>
+<div class="app">
+<aside class="side"><h1>♫ Musify</h1>
+<button class="nav on" data-v="a">Audius (abierto)</button><button class="nav" data-v="y">YouTube (oficial)</button><button class="nav" data-v="m">YT Music (ytmusicapi)</button><button class="nav" data-v="p">Piped (audio)</button><button class="nav" data-v="f">Favoritas</button><button class="nav" data-v="l">Playlists</button><button class="nav" data-v="o">Sin conexión</button></aside>
+<main class="main"><h2 id="h"></h2>
+<input type="text" id="q" placeholder="Busca y presiona Enter…">
+<input type="password" id="key" placeholder="Clave de YouTube Data API (opcional, para buscar)" style="display:none">
+<p id="msg"></p><div id="ytw"><div id="ytp"></div></div><div id="list"></div></main>
+<footer class="bar">
+<div class="now"><img class="cv" id="ncv" alt=""><div><div id="nt" class="t">Elige una canción</div><div id="na" class="a">—</div></div></div>
+<div class="ctl"><div class="btns"><button id="pv">⏮</button><button class="pp" id="pp">▶</button><button id="nx">⏭</button></div>
+<div class="pr"><span id="el">0:00</span><input type="range" id="sk" min="0" max="1000" value="0"><span id="du">0:00</span></div></div>
+<div class="vol">🔊<input type="range" id="vl" min="0" max="100" value="70"></div>
+</footer></div>
+<dialog id="dlg"><div id="dbody"></div><button class="nav" id="dc">Cerrar</button></dialog>
+<script>
+const $=s=>document.querySelector(s);
+const S=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){}return null};
+const fmt=s=>isFinite(s)?Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0"):"0:00";
+const dec=s=>{const e=document.createElement("textarea");e.innerHTML=s;return e.value};
+const NAMES={m:"YouTube Music · ytmusicapi",p:"Piped · audio directo",a:"Audius · música abierta",y:"YouTube",f:"Tus favoritas",l:"Tus playlists",o:"Sin conexión · música guardada"};
+let view="a",list=[],cur=-1,favs=[],yt,ytReady=false,pending=null,curT=null;
+try{favs=JSON.parse(S("favs")||"[]")}catch(e){}
+const au=new Audio();$("#key").value=S("ytkey")||"";
+const isFav=t=>favs.some(f=>f.k==t.k&&f.id==t.id);
+const msg=s=>$("#msg").textContent=s||"";
+
+async function audius(q){
+ const p=q?"/v1/tracks/search?query="+encodeURIComponent(q)+"&":"/v1/tracks/trending?";
+ const r=await fetch("https://api.audius.co"+p+"limit=25&app_name=musify");
+ if(!r.ok)throw new Error("Audius respondió "+r.status);
+ return (await r.json()).data.map(x=>({k:"a",id:x.id,t:x.title,a:x.user.name,img:x.artwork&&x.artwork["150x150"]}));
+}
+async function youtube(q){
+ const m=q.match(/(?:v=|youtu\.be\/|\/shorts\/)([\w-]{11})/)||q.match(/^([\w-]{11})$/);
+ if(m){
+  const r=await fetch("https://www.youtube.com/oembed?format=json&url="+encodeURIComponent("https://www.youtube.com/watch?v="+m[1]));
+  const j=r.ok?await r.json():{title:"Video "+m[1],author_name:"YouTube",thumbnail_url:""};
+  return [{k:"y",id:m[1],t:j.title,a:j.author_name,img:j.thumbnail_url}];
+ }
+ const key=$("#key").value.trim();
+ if(!key)throw new Error("Pega un enlace de YouTube, o escribe tu clave de la YouTube Data API arriba para poder buscar por nombre.");
+ S("ytkey",key);
+ const r=await fetch("https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=20&q="+encodeURIComponent(q)+"&key="+encodeURIComponent(key));
+ const j=await r.json();if(j.error)throw new Error(j.error.message);
+ return j.items.map(x=>({k:"y",id:x.id.videoId,t:dec(x.snippet.title),a:dec(x.snippet.channelTitle),img:x.snippet.thumbnails.default.url}));
+}
+async function go(){
+ const q=$("#q").value.trim();$("#h").textContent=NAMES[view];
+ $("#key").style.display=view=="y"?"block":"none";
+ if(view=="f"){list=favs;msg(favs.length?"":"Aún no tienes favoritas.");return render()}
+ if(view=="o"){list=off;msg(off.length?"":"Aún no guardas música. Usa ⬇ en canciones de Audius.");return render()}
+ if(view=="l")return renderPlaylists();
+ if(view=="pl"){const p=pls.find(x=>x.id==plId);if(!p){view="l";return go()}$("#h").textContent="♫ "+p.name;list=p.tracks;msg(p.tracks.length?"":"Playlist vacía. Agrega canciones con ＋.");return render()}
+ if("ymp".includes(view)&&!q){list=[];msg(view=="y"?"Busca por nombre (con clave) o pega un enlace de YouTube.":"Escribe qué canción buscar y presiona Enter.");return render()}
+ msg("Cargando…");
+ try{list=await({a:audius,y:youtube,m:ytm,p:piped})[view](q);msg(list.length?"":"Sin resultados.")}catch(e){list=[];msg("Error: "+e.message)}
+ render();
+}
+async function ytm(q){
+ const r=await fetch("/api/search?q="+encodeURIComponent(q)).catch(()=>null);
+ if(!r||!r.ok)throw new Error("Esta fuente necesita correr server.py (ver instrucciones).");
+ return (await r.json()).map(x=>({k:"y",...x}));
+}
+async function piped(q){
+ const r=await fetch("/api/piped/search?q="+encodeURIComponent(q)).catch(()=>null);
+ if(!r||!r.ok)throw new Error("Ninguna instancia de Piped respondió; intenta de nuevo en un momento.");
+ return (await r.json()).map(x=>({k:"p",...x}));
+}
+async function streamUrl(t){
+ if(t.k=="a"&&isOff(t)){
+  const m=await(await caches.open("musify-audio")).match("/offline/a/"+t.id);
+  if(m){if(blobUrl)URL.revokeObjectURL(blobUrl);blobUrl=URL.createObjectURL(await m.blob());return blobUrl}
+ }
+ if(t.k=="a")return "https://api.audius.co/v1/tracks/"+t.id+"/stream?app_name=musify";
+ const r=await fetch("/api/piped/stream?id="+encodeURIComponent(t.id));
+ if(!r.ok)throw new Error("No se pudo obtener el audio");
+ return (await r.json()).url;
+}
+const J=(k,d)=>{try{return JSON.parse(S(k))||d}catch(e){return d}};
+let pls=J("pls",[]),off=J("off",[]),plId=null,blobUrl="";
+const savePl=()=>S("pls",JSON.stringify(pls));
+const isOff=t=>off.some(o=>o.k==t.k&&o.id==t.id);
+const toData=u=>fetch(u).then(r=>r.blob()).then(b=>new Promise(res=>{const f=new FileReader();f.onload=()=>res(f.result);f.readAsDataURL(b)}));
+function newPl(t){const n=(prompt("Nombre de la playlist")||"").trim();if(!n)return null;const p={id:Date.now().toString(36),name:n,tracks:t?[t]:[]};pls.push(p);savePl();return p}
+function openAdd(t){
+ const b=$("#dbody");b.innerHTML="<b>Agregar a playlist</b>";
+ const mk=(txt,f)=>{const x=document.createElement("button");x.className="nav";x.textContent=txt;x.onclick=f;b.appendChild(x)};
+ pls.forEach(p=>mk(p.name+" ("+p.tracks.length+")",()=>{if(!p.tracks.some(x=>x.k==t.k&&x.id==t.id)){p.tracks.push(t);savePl()}msg("Agregada a «"+p.name+"»");$("#dlg").close()}));
+ mk("＋ Nueva playlist",()=>{const p=newPl(t);$("#dlg").close();if(p)msg("Creada «"+p.name+"»")});
+ $("#dlg").showModal();
+}
+$("#dc").onclick=()=>$("#dlg").close();
+async function toggleOff(t,btn){
+ const c=await caches.open("musify-audio"),key="/offline/"+t.k+"/"+t.id;
+ if(isOff(t)){await c.delete(key);off=off.filter(o=>!(o.k==t.k&&o.id==t.id));S("off",JSON.stringify(off));return view=="o"?go():render()}
+ btn.textContent="…";
+ try{
+  if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
+  const r=await fetch(await streamUrl(t));if(!r.ok)throw new Error("código "+r.status);
+  await c.put(key,new Response(await r.blob(),{headers:{"Content-Type":r.headers.get("Content-Type")||"audio/mpeg"}}));
+  const img=t.img?await toData(t.img).catch(()=>t.img):"";
+  off.push({...t,img});S("off",JSON.stringify(off));msg("Guardada para escuchar sin conexión.");
+ }catch(e){await c.delete(key);msg("No se pudo guardar: "+e.message)}
+ render();
+}
+function extra(t,i){
+ const out=[],mk=(txt,title,f)=>{const b=document.createElement("button");b.className="hb";b.textContent=txt;b.title=title;b.onclick=e=>{e.stopPropagation();f(b)};out.push(b);return b};
+ if(view=="pl")mk("✕","Quitar de la playlist",()=>{const p=pls.find(x=>x.id==plId);p.tracks.splice(i,1);savePl();go()});
+ else mk("＋","Agregar a playlist",()=>openAdd(t));
+ if(t.k=="a")mk(isOff(t)?"✔":"⬇",isOff(t)?"Guardada: toca para quitar":"Guardar sin conexión",b=>toggleOff(t,b)).classList.toggle("on",isOff(t));
+ return out;
+}
+function toolbar(L){
+ const p=pls.find(x=>x.id==plId);if(!p)return;
+ const d=document.createElement("div");d.style.cssText="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px";
+ [["← Playlists",()=>{view="l";go()}],["▶ Reproducir",()=>list.length&&play(0)],
+  ["Renombrar",()=>{const n=(prompt("Nuevo nombre",p.name)||"").trim();if(n){p.name=n;savePl();go()}}],
+  ["Eliminar",()=>{if(confirm("¿Eliminar «"+p.name+"»?")){pls=pls.filter(x=>x!=p);savePl();view="l";go()}}]
+ ].forEach(([n,f])=>{const b=document.createElement("button");b.className="nav";b.style.width="auto";b.textContent=n;b.onclick=f;d.appendChild(b)});
+ L.appendChild(d);
+}
+function renderPlaylists(){
+ const L=$("#list");L.innerHTML="";msg(pls.length?"":"Aún no tienes playlists.");
+ const nb=document.createElement("button");nb.className="nav";nb.style.width="auto";nb.textContent="＋ Nueva playlist";nb.onclick=()=>{if(newPl())go()};L.appendChild(nb);
+ pls.forEach(p=>{
+  const r=document.createElement("div");r.className="row";
+  const c=document.createElement("div");c.className="cv";c.textContent="♫";
+  const m=document.createElement("div"),a=document.createElement("div"),b=document.createElement("div");
+  a.className="t";a.textContent=p.name;b.className="a";b.textContent=p.tracks.length+" canciones";m.append(a,b);
+  r.append(c,m,document.createElement("span"));r.onclick=()=>{plId=p.id;view="pl";go()};L.appendChild(r);
+ });
+}
+window.addEventListener("offline",()=>msg("Sin internet: abre «Sin conexión» para tu música guardada."));
+function render(){
+ const L=$("#list");L.innerHTML="";if(view=="pl")toolbar(L);
+ list.forEach((t,i)=>{
+  const r=document.createElement("div");r.className="row"+(curT&&curT.k==t.k&&curT.id==t.id?" on":"");
+  const c=document.createElement(t.img?"img":"div");c.className="cv";if(t.img)c.src=t.img;else c.textContent=t.t[0];
+  const m=document.createElement("div"),a=document.createElement("div"),b=document.createElement("div");
+  a.className="t";a.textContent=t.t;b.className="a";b.textContent=t.a;m.append(a,b);
+  const h=document.createElement("button");h.className="hb"+(isFav(t)?" on":"");h.textContent=isFav(t)?"♥":"♡";
+  h.onclick=e=>{e.stopPropagation();favs=isFav(t)?favs.filter(f=>!(f.k==t.k&&f.id==t.id)):[...favs,t];S("favs",JSON.stringify(favs));view=="f"?go():render()};
+  const bx=document.createElement("div");bx.className="bx";bx.append(h,...extra(t,i));r.append(c,m,bx);r.onclick=()=>play(i);L.appendChild(r);
+ });
+}
+function setP(p){$("#pp").textContent=p?"⏸":"▶"}
+function ensureYT(cb){
+ if(ytReady)return cb();pending=cb;
+ const init=()=>{yt=new YT.Player("ytp",{width:"100%",height:"100%",playerVars:{playsinline:1},events:{
+  onReady:()=>{ytReady=true;yt.setVolume($("#vl").value);pending&&pending()},
+  onStateChange:e=>{if(e.data==0)next();setP(e.data==1)}}})};
+ if(window.YT&&YT.Player)return init();
+ window.onYouTubeIframeAPIReady=init;
+ const s=document.createElement("script");s.src="https://www.youtube.com/iframe_api";document.head.appendChild(s);
+}
+function play(i){
+ cur=i;curT=list[i];const t=curT;
+ $("#nt").textContent=t.t;$("#na").textContent=t.a;$("#ncv").src=t.img||"";render();
+ au.pause();if(ytReady)yt.pauseVideo();
+ if(t.k!="y"){$("#ytw").style.display="none";streamUrl(t).then(u=>{au.src=u;return au.play()}).catch(e=>msg("No se pudo reproducir: "+e.message))}
+ else{$("#ytw").style.display="block";ensureYT(()=>yt.loadVideoById(t.id))}
+}
+function toggle(){
+ if(!curT)return list.length&&play(0);
+ if(curT.k!="y")au.paused?au.play():au.pause();
+ else if(ytReady)yt.getPlayerState()==1?yt.pauseVideo():yt.playVideo();
+}
+function next(){if(list.length)play((cur+1)%list.length)}
+function prev(){if(list.length)play((cur-1+list.length)%list.length)}
+au.onplay=()=>setP(true);au.onpause=()=>setP(false);au.onended=next;
+au.onerror=()=>msg("Esta pista no se pudo cargar; prueba con otra.");
+setInterval(()=>{
+ if(!curT)return;let e=0,d=0;
+ if(curT.k!="y"){e=au.currentTime;d=au.duration}
+ else if(ytReady&&yt.getCurrentTime){e=yt.getCurrentTime();d=yt.getDuration()}
+ if(d){$("#sk").value=e/d*1000;$("#el").textContent=fmt(e);$("#du").textContent=fmt(d)}
+},500);
+$("#sk").oninput=e=>{if(!curT)return;const f=e.target.value/1000;
+ if(curT.k!="y"&&au.duration)au.currentTime=f*au.duration;else if(ytReady)yt.seekTo(f*yt.getDuration(),true)};
+$("#vl").oninput=e=>{au.volume=e.target.value/100;if(ytReady)yt.setVolume(e.target.value)};au.volume=.7;
+$("#pp").onclick=toggle;$("#nx").onclick=next;$("#pv").onclick=prev;
+$("#q").onkeydown=e=>{if(e.key=="Enter")go()};
+document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>{view=b.dataset.v;$("#q").value="";document.querySelectorAll(".nav").forEach(x=>x.classList.toggle("on",x==b));go()});
+if(navigator.onLine)go();else document.querySelector('[data-v="o"]').click();
+if("serviceWorker" in navigator)navigator.serviceWorker.register("/sw.js");
+</script></body></html>

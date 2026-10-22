@@ -61,7 +61,5 @@ publicar para más gente, deja solo Audius y YouTube (oficial). Las tiendas de a
 - **Buscar por letra (♪):** mejor esfuerzo, usando la búsqueda de YouTube Music; no es una búsqueda de texto completo.
 - **Temas y colores:** oscuro, AMOLED y claro, con cinco colores de acento.
 
-
-## Prueba privada de la versi?n 3
-
-La rama de prueba usa un servicio Render separado (`musify-test`) y exige autenticaci?n HTTP Basic para todas las p?ginas y API. Configura `MUSIFY_TEST_USER` y `MUSIFY_TEST_PASSWORD` como secretos al crear el Blueprint; si faltan, el servidor no sirve contenido. Comparte esas credenciales ?nicamente con quienes vayan a probarla. La rama de prueba no sustituye ni actualiza `main`.
+## Corrección importante (versión 3.1)
+Se arregló un error de JavaScript que dejaba la app sin responder (no se podía cambiar de sección ni de buscador). Ahora el menú, los buscadores y todas las funciones responden, y se agregaron 3 temas nuevos (Océano, Vino, Bosque), 12 colores de acento y un selector de color personalizado en «Personalizar».

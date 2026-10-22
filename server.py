@@ -40,11 +40,51 @@ def stream_piped(vid):
         raise RuntimeError("Sin audio disponible")
     return {"url": max(streams, key=lambda s: s.get("bitrate", 0))["url"]}
 
+def radio(vid):
+    d = yt.get_watch_playlist(videoId=vid, radio=True, limit=25)
+    out = []
+    for r in d.get("tracks", []):
+        if r.get("videoId") and r["videoId"] != vid:
+            out.append({"id": r["videoId"], "t": r["title"],
+                        "a": ", ".join(a["name"] for a in r.get("artists") or []),
+                        "img": (r.get("thumbnail") or [{}])[-1].get("url", "")})
+    return out
+
+def lrclib(path):
+    req = urllib.request.Request("https://lrclib.net/api" + path, headers={"User-Agent": "Musify/1.0"})
+    with urllib.request.urlopen(req, timeout=8) as r:
+        return json.load(r)
+
+def lyrics(artist, title):
+    j = None
+    try:
+        j = lrclib("/get?" + urllib.parse.urlencode({"artist_name": artist, "track_name": title}))
+    except Exception:
+        pass
+    if not j or not (j.get("syncedLyrics") or j.get("plainLyrics")):
+        try:
+            res = lrclib("/search?" + urllib.parse.urlencode({"q": (artist + " " + title).strip()}))
+        except Exception:
+            res = []
+        j = next((x for x in res if x.get("syncedLyrics")), None) or next((x for x in res if x.get("plainLyrics")), {})
+    return {"synced": j.get("syncedLyrics") or "", "plain": j.get("plainLyrics") or ""}
+
+def lyric_search(q):
+    seen, out = set(), []
+    for x in search_ytm(q) + search_ytm(q + " letra lyrics"):
+        if x["id"] not in seen:
+            seen.add(x["id"])
+            out.append(x)
+    return out
+
 class H(SimpleHTTPRequestHandler):
     def do_GET(self):
         u = urllib.parse.urlparse(self.path)
         p = urllib.parse.parse_qs(u.query)
         routes = {"/api/search": lambda: search_ytm(p["q"][0]),
+                  "/api/radio": lambda: radio(p["id"][0]),
+                  "/api/lyrics": lambda: lyrics(p.get("artist", [""])[0], p.get("title", [""])[0]),
+                  "/api/lyricsearch": lambda: lyric_search(p["q"][0]),
                   "/api/piped/search": lambda: search_piped(p["q"][0]),
                   "/api/piped/stream": lambda: stream_piped(p["id"][0])}
         if u.path not in routes:

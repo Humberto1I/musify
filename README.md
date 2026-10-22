@@ -47,3 +47,16 @@ publicar para más gente, deja solo Audius y YouTube (oficial). Las tiendas de a
 - **Sin conexión:** en las canciones de Audius toca ⬇ para guardarlas en el dispositivo; el ✔ indica que ya están guardadas. Aparecen en la sección «Sin conexión», que se abre sola cuando no hay internet, y también suenan dentro de tus playlists.
 - Las canciones de YouTube y Piped no se pueden guardar: el reproductor de YouTube no lo permite y descargar audio de YouTube es copiar contenido protegido.
 - Playlists y descargas viven en cada dispositivo; si limpias los datos del navegador o desinstalas la app, se borran.
+
+## Funciones de la versión 3
+- **Letras sincronizadas (🎤):** muestra la letra con la línea actual resaltada. Las busca en LRCLIB a través del servidor; no todas las canciones tienen letra, y si solo hay letra sin tiempos se muestra completa.
+- **Ecualizador (⚙ Personalizar):** graves, medios y agudos. Solo actúa sobre Audius y música guardada, se aplica desde la siguiente canción y, si algún día Audius dejara de permitirlo, basta con ponerlo en 0.
+- **Radio (📻):** al llegar al final de la cola agrega canciones parecidas. Con YouTube/Piped usa la radio de YouTube Music; con Audius busca otras canciones del mismo artista (no hay "similares" reales).
+- **Para ti, Estadísticas y Descubrir:** se calculan con tu historial en este dispositivo (una escucha cuenta tras 20 s). Descubrir usa las listas de tendencias de Audius.
+- **Fundido:** activable en Personalizar; baja y sube el volumen 3 s al inicio y final de cada canción (no es un cruce real entre dos canciones).
+- **Temporizador (⏲), historial (Recientes) y sin conexión:** ya estaban; el temporizador cicla 15 / 30 / 60 min.
+- **Pantalla de bloqueo:** el sistema muestra título, artista, carátula y botones. En Android funciona con Audius y Piped; el reproductor de YouTube incrustado suele pausarse con la pantalla apagada.
+- **Importar playlists:** pega una lista «Artista - Título» o sube el CSV de Exportify (Spotify). Se busca cada canción en Audius o YouTube Music y se guardan las coincidencias (máx. 60).
+- **Compartir playlists:** el botón 🔗 genera un enlace con la lista; quien lo abra puede guardarla. Va dentro del enlace, sin cuentas.
+- **Buscar por letra (♪):** mejor esfuerzo, usando la búsqueda de YouTube Music; no es una búsqueda de texto completo.
+- **Temas y colores:** oscuro, AMOLED y claro, con cinco colores de acento.

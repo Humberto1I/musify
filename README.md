@@ -60,3 +60,8 @@ publicar para más gente, deja solo Audius y YouTube (oficial). Las tiendas de a
 - **Compartir playlists:** el botón 🔗 genera un enlace con la lista; quien lo abra puede guardarla. Va dentro del enlace, sin cuentas.
 - **Buscar por letra (♪):** mejor esfuerzo, usando la búsqueda de YouTube Music; no es una búsqueda de texto completo.
 - **Temas y colores:** oscuro, AMOLED y claro, con cinco colores de acento.
+
+
+## Prueba privada de la versi?n 3
+
+La rama de prueba usa un servicio Render separado (`musify-test`) y exige autenticaci?n HTTP Basic para todas las p?ginas y API. Configura `MUSIFY_TEST_USER` y `MUSIFY_TEST_PASSWORD` como secretos al crear el Blueprint; si faltan, el servidor no sirve contenido. Comparte esas credenciales ?nicamente con quienes vayan a probarla. La rama de prueba no sustituye ni actualiza `main`.

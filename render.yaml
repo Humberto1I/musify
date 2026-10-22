@@ -1,7 +1,12 @@
 services:
   - type: web
-    name: musify
+    name: musify-test
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: python server.py
+    envVars:
+      - key: MUSIFY_TEST_USER
+        sync: false
+      - key: MUSIFY_TEST_PASSWORD
+        sync: false

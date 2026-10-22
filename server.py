@@ -1,6 +1,6 @@
 # Servidor de Musify: sirve la web (carpeta static), busca con ytmusicapi
 # y obtiene audio de Piped probando varias instancias hasta que una responda.
-import functools, json, os, urllib.parse, urllib.request
+import base64, functools, hmac, json, os, urllib.parse, urllib.request
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from ytmusicapi import YTMusic
 
@@ -78,7 +78,36 @@ def lyric_search(q):
     return out
 
 class H(SimpleHTTPRequestHandler):
+    def _authorized(self):
+        expected_user = os.environ.get("MUSIFY_TEST_USER")
+        expected_password = os.environ.get("MUSIFY_TEST_PASSWORD")
+        if not expected_user or not expected_password:
+            self.send_error(503, "Private test access is not configured")
+            return False
+        try:
+            scheme, token = self.headers.get("Authorization", "").split(" ", 1)
+            if scheme.lower() != "basic":
+                raise ValueError("Unsupported authorization scheme")
+            supplied = base64.b64decode(token, validate=True).decode("utf-8")
+            username, password = supplied.split(":", 1)
+        except (ValueError, UnicodeDecodeError):
+            username, password = "", ""
+        if not (hmac.compare_digest(username, expected_user) and
+                hmac.compare_digest(password, expected_password)):
+            self.send_response(401)
+            self.send_header("WWW-Authenticate", 'Basic realm="Musify test", charset="UTF-8"')
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return False
+        return True
+
+    def do_HEAD(self):
+        if self._authorized():
+            return super().do_HEAD()
+
     def do_GET(self):
+        if not self._authorized():
+            return
         u = urllib.parse.urlparse(self.path)
         p = urllib.parse.parse_qs(u.query)
         routes = {"/api/search": lambda: search_ytm(p["q"][0]),
